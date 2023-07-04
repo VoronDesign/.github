@@ -1,0 +1,64 @@
+---
+name: Check files
+on:
+  workflow_call:
+    inputs:
+      subdirectory:
+        description: Name of the directory in which the printer mods are located
+        type: string
+        required: true
+      cache-key:
+        description: Cache key where files to check are cached
+        type: string
+        required: true
+      cache-directory:
+        description: Cache subdirectory matching the cache key
+        type: string
+        required: false
+        default: pr-files
+      python-cache-key:
+        description: Cache key for previously set up python environment
+        type: string
+        required: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflows repo ↪️
+        # Check out .github repo to gain access to scripts
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          repository: VoronDesign/.github
+          persist-credentials: false
+      - name: Get repository files 🧰
+        # Get cached PR files
+        uses: actions/cache/restore@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+        id: get-repo-cache
+        with:
+          path: ${{ github.workspace }}/${{ inputs.cache-directory }}
+          key: ${{ inputs.cache-key }}
+      - name: Setup python 3.11 🐍
+        id: python311
+        uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0
+        with:
+          python-version: '3.11'
+      - if: ${{ inputs.python-cache-key != '' }}
+        name: Get python package cache 🧰
+        # Get cached python dependencies (to avoid repetitive pip install's)
+        uses: actions/cache/restore@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+        id: cache-python
+        env:
+          cache-name: cache-python
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ inputs.python-cache-key }}
+      - if: ${{ inputs.python-cache-key == '' || steps.cache-python.outputs.cache-hit != 'true' }}
+        # If no cache-key was provided, or cache-miss occurred on python cache, install required packages
+        name: Install python packages 🛠️
+        id: pip-install-packages
+        run: |
+          pip install pyyaml
+      - name: Check files ✅
+        run: |-
+          cd ${{ github.workspace }}/${{ inputs.cache-directory }}/${{ inputs.subdirectory }}
+          python ${{ github.workspace }}/scripts/check_files.py

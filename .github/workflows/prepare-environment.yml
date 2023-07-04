@@ -1,0 +1,51 @@
+---
+name: Prepare Pip & Apt Environment
+on:
+  workflow_call:
+    inputs:
+      apt-packages:
+        description: Apt packages to install
+        type: string
+        required: false
+        default: ''
+      pip-packages:
+        description: Pip packages to install
+        type: string
+        required: false
+        default: ''
+      python-cache-key:
+        description: Python cache key to use
+        type: string
+        required: false
+        default: python-cache
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup python 3.11 🐍
+        id: python311
+        uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0
+        with:
+          python-version: '3.11'
+      - if: ${{ inputs.apt-packages != '' }}
+        # Get cached apt dependencies (or install them on cache-miss)
+        name: Install apt packages (cached) 🛠️🧰
+        uses: awalsh128/cache-apt-pkgs-action@1850ee53f6e706525805321a3f2f863dcf73c962
+        with:
+          packages: ${{ inputs.apt-packages }}
+          version: 1.0
+      - name: Get python package cache 🧰
+        if: ${{ inputs.python-cache-key != '' }}
+        uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+        id: cache-python
+        env:
+          cache-name: cache-python
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ inputs.python-cache-key }}
+      - if: ${{ steps.cache-python.outputs.cache-hit != 'true' && inputs.pip-packages != '' }}
+        # If no pip packages was provided, or cache-miss occurred on python cache, install required packages
+        # Note: This has to run AFTER the apt package install, as apt libraries may be required for pip packages
+        name: Install Python packages 🛠️
+        run: |-
+          pip install ${{ inputs.pip-packages }}
