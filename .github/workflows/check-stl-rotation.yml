@@ -1,0 +1,97 @@
+---
+name: Check STLs in folder for possibly suboptimal rotation
+on:
+  workflow_call:
+    inputs:
+      cache-key:
+        description: Cache key where STL files to check are cached
+        type: string
+        required: true
+      cache-directory:
+        description: Cache directory matching the cache key
+        type: string
+        required: true
+      python-cache-key:
+        description: Cache key for previously set up python environment
+        type: string
+        required: false
+      imagekit-url-endpoint:
+        required: true
+        type: string
+        description: IMAGEKIT.io endpoint to push images to
+    secrets:
+      IMAGEKIT_PRIVATE_KEY:
+        required: true
+      IMAGEKIT_PUBLIC_KEY:
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflows repo ↪️
+        # Check out .github repo to gain access to scripts
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          repository: VoronDesign/.github
+      - name: Get repository files cache 🧰
+        # Get cached PR files
+        uses: actions/cache/restore@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+        id: get-repo-cache
+        with:
+          path: ${{ github.workspace }}/${{ inputs.cache-directory }}
+          key: ${{ inputs.cache-key }}
+      - name: Setup python 3.11 🐍
+        id: python311
+        uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0
+        with:
+          python-version: '3.11'
+      - name: Get python package cache 🧰
+        # Get cached python dependencies (to avoid repetitive pip install's)
+        uses: actions/cache/restore@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+        id: cache-python
+        env:
+          cache-name: cache-python
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ inputs.python-cache-key }}
+      - if: ${{ inputs.python-cache-key == '' || steps.cache-python.outputs.cache-hit != 'true' }}
+        # If no cache-key was provided, or cache-miss occurred on python cache, install required packages
+        name: Install python packages 🛠️
+        id: pip-install-packages
+        run: |
+          pip install git+https://github.com/ChristophSchranz/Tweaker-3.git imagekitio
+      - id: download-stl-thumb
+        # Download STL thumb binary
+        name: Download STL thumb ⬇️
+        run: |
+          curl -L https://github.com/unlimitedbacon/stl-thumb/releases/download/v0.5.0/stl-thumb_0.5.0_amd64.deb --output ${{ runner.temp }}/stl-thumb_0.5.0_amd64.deb
+      - name: Install apt packages (cached) 🛠️🧰
+        # Get cached apt dependencies (or install them on cache-miss)
+        uses: awalsh128/cache-apt-pkgs-action@1850ee53f6e706525805321a3f2f863dcf73c962
+        with:
+          packages: ${{ runner.temp }}/stl-thumb_0.5.0_amd64.deb
+          version: 1.0
+      - name: Show tool versions 🏃
+        # Print tool versions for debugging purposes
+        id: run-tools
+        run: |
+          tweaker3 --version
+          stl-thumb --version
+      - name: Check STLs for rotation issues ✅
+        # Run the STL rotation checker
+        id: check-stl-rotation
+        env:
+          IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
+          IMAGEKIT_PUBLIC_KEY: ${{ secrets.IMAGEKIT_PUBLIC_KEY }}
+          IMAGEKIT_URL_ENDPOINT: ${{ inputs.imagekit-url-endpoint }}
+          IMAGEKIT_SUBFOLDER: ci_${{github.event.number}}
+        run: |-
+          python3 ${{ github.workspace }}/scripts/check_stl_rotation.py -vg --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }} --output_dir=${{runner.temp}}/rotated/ --temp_image_dir=${{runner.temp}}
+      - if: ${{ always() }}
+        # Upload rotated STLs as artifact
+        name: Upload rotated STLs ⬆️
+        uses: actions/upload-artifact@65d862660abb392b8c4a3d1195a2108db131dd05
+        with:
+          name: pr_${{github.event.number}}.${{github.run_number}}_rotated_stls
+          path: ${{runner.temp}}/rotated/
+          if-no-files-found: ignore

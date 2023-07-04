@@ -1,0 +1,41 @@
+---
+name: Check metadata files
+on:
+  workflow_call:
+    inputs:
+      cache-key:
+        description: Cache key where STL files to check are cached
+        type: string
+        required: true
+      cache-directory:
+        description: Cache subdirectory matching the cache key
+        type: string
+      python-cache-key:
+        description: Cache key for previously set up python environment
+        type: string
+        required: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflows repo ↪️
+        # Check out .github repo to gain access to scripts
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          repository: VoronDesign/.github
+      - name: Get repository files cache 🧰
+        # Get cached PR files
+        uses: actions/cache/restore@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+        id: get-repo-cache
+        with:
+          path: ${{github.workspace}}/${{ inputs.cache-directory }}
+          key: ${{ inputs.cache-key }}
+      - name: Check Metadata files ✅
+        # Perform the metadata file validation
+        id: check-metadata
+        uses: FHeilmann/yaml-schema-checker@main
+        with:
+          jsonSchemaFile: ${{github.workspace}}/support_files/json_schema.json
+          yamlFiles: '**/.metadata.yml'
+          yamlWorkingDirectory: ${{github.workspace}}/${{ inputs.cache-directory }}
+          enableGithubStepSummary: true

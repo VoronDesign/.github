@@ -1,0 +1,78 @@
+---
+name: Generate readme and commit
+on:
+  workflow_call:
+    inputs:
+      subdirectory:
+        description: Name of the directory in which the printer mods are located and
+          where README.md is generated
+        type: string
+        required: true
+      commit_msg:
+        description: Commit message to use (don't forget to add [skip ci])
+        type: string
+        required: false
+        default: Generate VoronUsers printer_mods README.md [skip ci]
+      commit_user:
+        description: Commit username to use
+        type: string
+        required: false
+        default: Readme-Committer
+      commit_email:
+        description: Commit eMail to use
+        type: string
+        required: false
+        default: readme@commit.me
+    secrets:
+      VORON_BOT_GITHUB_PAT:
+        description: GitHub token or PAT token
+        required: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflows repo ↪️
+        # Check out .github repo to gain access to scripts
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          repository: VoronDesign/.github
+          persist-credentials: false
+      - name: Perform Sparse Checkout ↪️
+        # Perform a sparse checkout, checking out only yaml files and the current README.md
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          path: ${{ github.workspace }}/sparse-repo
+          sparse-checkout: |
+            ${{ inputs.subdirectory }}/**/.metadata.yml
+            ${{ inputs.subdirectory }}/README.md
+          token: ${{ secrets.VORON_BOT_GITHUB_PAT }}
+          sparse-checkout-cone-mode: false
+      - name: Setup python 3.11 🐍
+        id: python311
+        uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0
+        with:
+          python-version: '3.11'
+      - name: Install python packages 🛠️
+        id: pip-install-packages
+        run: |
+          pip install pyyaml
+      - name: Generate README.md 📃
+        # Generate the new readme file
+        run: |
+          cd ${{ github.workspace }}/sparse-repo/${{ inputs.subdirectory }}
+          export PREVIEW=false
+          python3 ${{ github.workspace }}/scripts/generate_readme.py
+      - name: Commit files 💾
+        # Commit the new readme using the GH bot credentials
+        run: |
+          cd ${{ github.workspace }}/sparse-repo/
+          git config user.email ${{ inputs.commit_email }}
+          git config user.name ${{ inputs.commit_user }}
+          git add ${{ inputs.subdirectory }}/README.md
+          git commit -m "${{ inputs.commit_msg }}" || true
+      - name: Push changes ⬆️
+        # Push the changes
+        uses: ad-m/github-push-action@d9117be7cad08757e9e906a1bcd1716d6b192db5
+        with:
+          github_token: ${{ secrets.VORON_BOT_GITHUB_PAT }}
+          directory: ${{ github.workspace }}/sparse-repo
