@@ -68,6 +68,28 @@ jobs:
         id: check-stls
         run: |-
           python3 ${{ github.workspace }}/scripts/check_stl_corruption.py -vfg --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }} --output_dir=${{runner.temp}}/fixed/
+      - if: ${{ failure() }}
+        name: Add STL Issues label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['STL Issues']
+            })
+      - if: success() && contains(github.event.pull_request.labels.*.name, 'STL Issues')
+        name: Remove STL Issues label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.removeLabel({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: ['STL Issues']
+            })
       - if: ${{ always() }}
         # Upload fixed STLs as artifact
         name: Upload fixed STLs ⬆️

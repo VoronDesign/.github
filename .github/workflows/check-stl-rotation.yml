@@ -87,6 +87,28 @@ jobs:
           IMAGEKIT_SUBFOLDER: ci_${{github.event.number}}
         run: |-
           python3 ${{ github.workspace }}/scripts/check_stl_rotation.py -vg --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }} --output_dir=${{runner.temp}}/rotated/ --temp_image_dir=${{runner.temp}}
+      - if: ${{ failure() }}
+        name: Add STL Rotation Warnings label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['STL Rotation Warnings']
+            })
+      - if: success() && contains(github.event.pull_request.labels.*.name, 'STL Rotation Warnings')
+        name: Remove STL Rotation Warnings label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.removeLabel({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: ['STL Rotation Warnings']
+            })
       - if: ${{ always() }}
         # Upload rotated STLs as artifact
         name: Upload rotated STLs ⬆️

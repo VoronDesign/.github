@@ -38,8 +38,8 @@ def main():
                 f'{", ".join(sorted(content["printer_compatibility"]))} |\n'
             )
             prev_username = yml.parts[0]
-    with open(os.environ["GITHUB_STEP_SUMMARY"], 'w') as f:
-       f.write(final_readme)
+    with open(os.environ["GITHUB_STEP_SUMMARY"], "w") as f:
+        f.write(final_readme)
     if os.environ["PREVIEW"] == "false":
         with open("README.md", "w") as f:
             f.write(preamble)

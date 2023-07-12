@@ -32,8 +32,8 @@ def main():
                     step_summary += f"| IMG | {img_file} | ❌ |\n"
                     result_error = True
             step_summary += "\n"
-    with open(os.environ["GITHUB_STEP_SUMMARY"], 'w') as f:
-       f.write(step_summary)
+    with open(os.environ["GITHUB_STEP_SUMMARY"], "w") as f:
+        f.write(step_summary)
     if result_error:
         return sys.exit(255)
 
