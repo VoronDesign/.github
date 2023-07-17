@@ -33,6 +33,11 @@ label_map: Dict[str, str] = {
     "Check metadata files": "CR: Metadata",
 }
 
+summary_task_blocklist: List[str] = [
+    "Prepare python environment",
+    "Store PR comment parameters"
+]
+
 all_ok_label = "Ready for review"
 
 preamble = """ Hi, thank you for submitting your PR.
@@ -74,8 +79,9 @@ def main(args: argparse.Namespace):
                 success = False
                 if job_name in label_map:
                     labels.append(f'"{label_map[job_name]}"')
-            job_result: str = result_map[job.get("conclusion", "")]
-            pr_comment += f"| {' | '.join([job_name, job_result, job_summary_url])} |\n"
+            if job_name not in summary_task_blocklist:
+                job_result: str = result_map[job.get("conclusion", "")]
+                pr_comment += f"| {' | '.join([job_name, job_result, job_summary_url])} |\n"
 
         Path(args.out_file).parent.mkdir(parents=True, exist_ok=True)
         with open(args.out_file, "w") as f:
