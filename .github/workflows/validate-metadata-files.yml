@@ -39,25 +39,3 @@ jobs:
           yamlFiles: '**/.metadata.yml'
           yamlWorkingDirectory: ${{github.workspace}}/${{ inputs.cache-directory }}
           enableGithubStepSummary: true
-      - if: ${{ failure() }}
-        name: Add Metadata Issues label
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.addLabels({
-              issue_number: context.payload.pull_request.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['Metadata Issues']
-            })
-      - if: success() && contains(github.event.pull_request.labels.*.name, 'Metadata Issues')
-        name: Remove Metadata Issues label
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.removeLabel({
-              issue_number: context.payload.pull_request.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: ['Metadata Issues']
-            })
