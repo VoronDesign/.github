@@ -77,6 +77,21 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
         return False
     except Exception as e:
         logger.error("A fatal error occurred during rotation checking", exc_info=e)
+        if args.github_step_summary:
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as gh_step_summary:
+                cell_contents: str = " | ".join(
+                    [
+                        stl_file.name,
+                        RESULT_ERROR,
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                    ]
+                )
+                gh_step_summary.write(f"| {cell_contents} |\n")
         return True
 
 def main(args: argparse.Namespace):

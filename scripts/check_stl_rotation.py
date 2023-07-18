@@ -26,8 +26,11 @@ STEP_SUMMARY_PREAMBLE = """## STL rotation check summary
 
 RESULT_OK = "✅ PASSED"
 RESULT_WARNING = "⚠️ WARNING"
+RESULT_ERROR = "❌ FAILED"
 
 file_handler = FileHandler.FileHandler()
+
+critical_error: bool = False
 
 try:
     imagekit: ImageKit | None = ImageKit(
@@ -113,10 +116,11 @@ def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> T
         return stl_has_bad_rotation, github_summary_table
     except Exception as e:
         logger.error("A fatal error occurred during rotation checking", exc_info=e)
+        critical_error = True
         return True, " | ".join(
             [
                 stl_file_path.name,
-                RESULT_WARNING,
+                RESULT_ERROR,
                 '',
                 '',
             ])
@@ -146,7 +150,7 @@ def main(args: argparse.Namespace):
             for summary in summaries:
                 gh_step_summary.write(summary)
 
-    if args.fail_on_error and fail:
+    if (args.fail_on_error and fail) or critical_error:
         sys.exit(255)
 
 
