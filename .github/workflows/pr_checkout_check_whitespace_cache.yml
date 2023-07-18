@@ -39,10 +39,12 @@ jobs:
         # Check whitespace in files obtained by the changed-files step
         name: Check whitespace in files/folders 🔍
         shell: bash
+        env:
+          TMP_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           echo "### The following changes were detected:" >> $GITHUB_STEP_SUMMARY
           ret_val=0
-          export TMP_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "FILE_LIST_QUOTED<<EOF" >> $GITHUB_OUTPUT
           IFS=$'\n'
           for file in $TMP_FILES; do
             if [[ $file = *[[:space:]]* ]]; then
@@ -53,9 +55,16 @@ jobs:
               echo "The following file is ok: $file"
               echo "OK: \`$file\`" >> $GITHUB_STEP_SUMMARY
             fi
+            echo $file | sed 's/[][]/\\&/g' >> $GITHUB_OUTPUT
           done
+          echo "EOF" >> $GITHUB_OUTPUT
           unset IFS
           exit $ret_val
+      - name: Debug FILE_LIST_QUOTED
+        env:
+          FILE_LIST: ${{ steps.check-whitespace.outputs.FILE_LIST_QUOTED }}
+        run: |
+          echo $FILE_LIST
       - name: Perform Sparse Checkout ↪️
         # Perform a sparse checkout, checking out only the files of the PR
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9

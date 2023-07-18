@@ -73,44 +73,53 @@ def make_image_url(stl_file_path: Path, input_args: argparse.Namespace) -> str:
 
 def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> Tuple[bool, str]:
     logger.info(f"Checking {stl_file_path.as_posix()}")
-    stl_has_bad_rotation: bool = False
-    rotated_image_url: str = ""
-    original_image_url: str = make_image_url(stl_file_path=stl_file_path, input_args=input_args)
+    try:
+        stl_has_bad_rotation: bool = False
+        rotated_image_url: str = ""
+        original_image_url: str = make_image_url(stl_file_path=stl_file_path, input_args=input_args)
 
-    objs: Dict[int, Any] = file_handler.load_mesh(inputfile=stl_file_path.as_posix())
-    if len(objs.items()) > 1:
-        logger.warning(f"{stl_file_path.as_posix()} contains multiple objects and is therefore skipped.!")
-        return False, ""
-    x: Tweak = Tweak(objs[0]["mesh"], extended_mode=True, verbose=False, min_volume=True)
+        objs: Dict[int, Any] = file_handler.load_mesh(inputfile=stl_file_path.as_posix())
+        if len(objs.items()) > 1:
+            logger.warning(f"{stl_file_path.as_posix()} contains multiple objects and is therefore skipped.!")
+            return False, ""
+        x: Tweak = Tweak(objs[0]["mesh"], extended_mode=True, verbose=False, min_volume=True)
 
-    if x.rotation_angle >= 0.1:
-        if input_args.output_dir is not None:
-            out_stl_path: Path = Path(
-                input_args.output_dir,
-                stl_file_path.relative_to(input_args.input_dir).with_stem(f"{stl_file_path.stem}_rotated"),
-            )
-            out_stl_path.parent.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Saving rotated STL to: {out_stl_path}")
-            file_handler.write_mesh(
-                objects=objs, info={0: {"matrix": x.matrix, "tweaker_stats": x}}, outputfile=out_stl_path.as_posix()
-            )
-            rotated_image_url = make_image_url(stl_file_path=out_stl_path, input_args=input_args)
-        stl_has_bad_rotation = True
-    else:
-        logger.info(f"STL {stl_file_path.as_posix()} does not contain any errors!")
-    github_summary_table_contents: str = " | ".join(
-        [
-            stl_file_path.name,
-            RESULT_WARNING if stl_has_bad_rotation else RESULT_OK,
-            f'[<img src="{original_image_url}" width="100" height="100">]({original_image_url})',
-            f'[<img src="{rotated_image_url}" width="100" height="100">]({rotated_image_url})'
-            if rotated_image_url != ""
-            else "",
-        ]
-    )
-    github_summary_table = f"| {github_summary_table_contents} |\n"
-    return stl_has_bad_rotation, github_summary_table
-
+        if x.rotation_angle >= 0.1:
+            if input_args.output_dir is not None:
+                out_stl_path: Path = Path(
+                    input_args.output_dir,
+                    stl_file_path.relative_to(input_args.input_dir).with_stem(f"{stl_file_path.stem}_rotated"),
+                )
+                out_stl_path.parent.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Saving rotated STL to: {out_stl_path}")
+                file_handler.write_mesh(
+                    objects=objs, info={0: {"matrix": x.matrix, "tweaker_stats": x}}, outputfile=out_stl_path.as_posix()
+                )
+                rotated_image_url = make_image_url(stl_file_path=out_stl_path, input_args=input_args)
+            stl_has_bad_rotation = True
+        else:
+            logger.info(f"STL {stl_file_path.as_posix()} does not contain any errors!")
+        github_summary_table_contents: str = " | ".join(
+            [
+                stl_file_path.name,
+                RESULT_WARNING if stl_has_bad_rotation else RESULT_OK,
+                f'[<img src="{original_image_url}" width="100" height="100">]({original_image_url})',
+                f'[<img src="{rotated_image_url}" width="100" height="100">]({rotated_image_url})'
+                if rotated_image_url != ""
+                else "",
+            ]
+        )
+        github_summary_table = f"| {github_summary_table_contents} |\n"
+        return stl_has_bad_rotation, github_summary_table
+    except Exception as e:
+        logger.error("A fatal error occurred during rotation checking", exc_info=e)
+        return True, " | ".join(
+            [
+                stl_file_path.name,
+                RESULT_WARNING,
+                '',
+                '',
+            ])
 
 def main(args: argparse.Namespace):
     input_path: Path = Path(args.input_dir)

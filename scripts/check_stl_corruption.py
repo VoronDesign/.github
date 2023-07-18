@@ -24,57 +24,60 @@ RESULT_ERROR = "❌ FAILED"
 
 def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
     logger.info(f"Checking {stl_file}")
-    stl: Stl = Stl(stl_file.as_posix())
-    stl.repair(verbose_flag=False)
-    if (
-        stl.stats["edges_fixed"] > 0
-        or stl.stats["backwards_edges"] > 0
-        or stl.stats["degenerate_facets"] > 0
-        or stl.stats["facets_removed"] > 0
-        or stl.stats["facets_added"] > 0
-        or stl.stats["facets_reversed"] > 0
-    ):
-        logger.error(f"Corrupt STL detected! Please fix {stl_file.as_posix()}!")
-        if args.github_step_summary:
-            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as gh_step_summary:
-                cell_contents: str = " | ".join(
-                    [
-                        stl_file.name,
-                        RESULT_ERROR,
-                        str(stl.stats["edges_fixed"]),
-                        str(stl.stats["backwards_edges"]),
-                        str(stl.stats["degenerate_facets"]),
-                        str(stl.stats["facets_removed"]),
-                        str(stl.stats["facets_added"]),
-                        str(stl.stats["facets_reversed"]),
-                    ]
-                )
-                gh_step_summary.write(f"| {cell_contents} |\n")
-        if args.output_dir is not None:
-            out_stl_path: Path = Path(args.output_dir, stl_file.relative_to(args.input_dir))
-            out_stl_path.parent.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Saving fixed STL to: {out_stl_path}")
-            stl.write_ascii(out_stl_path.as_posix())
+    try:
+        stl: Stl = Stl(stl_file.as_posix())
+        stl.repair(verbose_flag=False)
+        if (
+            stl.stats["edges_fixed"] > 0
+            or stl.stats["backwards_edges"] > 0
+            or stl.stats["degenerate_facets"] > 0
+            or stl.stats["facets_removed"] > 0
+            or stl.stats["facets_added"] > 0
+            or stl.stats["facets_reversed"] > 0
+        ):
+            logger.error(f"Corrupt STL detected! Please fix {stl_file.as_posix()}!")
+            if args.github_step_summary:
+                with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as gh_step_summary:
+                    cell_contents: str = " | ".join(
+                        [
+                            stl_file.name,
+                            RESULT_ERROR,
+                            str(stl.stats["edges_fixed"]),
+                            str(stl.stats["backwards_edges"]),
+                            str(stl.stats["degenerate_facets"]),
+                            str(stl.stats["facets_removed"]),
+                            str(stl.stats["facets_added"]),
+                            str(stl.stats["facets_reversed"]),
+                        ]
+                    )
+                    gh_step_summary.write(f"| {cell_contents} |\n")
+            if args.output_dir is not None:
+                out_stl_path: Path = Path(args.output_dir, stl_file.relative_to(args.input_dir))
+                out_stl_path.parent.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Saving fixed STL to: {out_stl_path}")
+                stl.write_ascii(out_stl_path.as_posix())
+            return True
+        else:
+            logger.info(f"STL {stl_file.as_posix()} does not contain any errors!")
+            if args.github_step_summary:
+                with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as gh_step_summary:
+                    cell_contents: str = " | ".join(
+                        [
+                            stl_file.name,
+                            RESULT_OK,
+                            "0",
+                            "0",
+                            "0",
+                            "0",
+                            "0",
+                            "0",
+                        ]
+                    )
+                    gh_step_summary.write(f"| {cell_contents} |\n")
+        return False
+    except Exception as e:
+        logger.error("A fatal error occurred during rotation checking", exc_info=e)
         return True
-    else:
-        logger.info(f"STL {stl_file.as_posix()} does not contain any errors!")
-        if args.github_step_summary:
-            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as gh_step_summary:
-                cell_contents: str = " | ".join(
-                    [
-                        stl_file.name,
-                        RESULT_OK,
-                        "0",
-                        "0",
-                        "0",
-                        "0",
-                        "0",
-                        "0",
-                    ]
-                )
-                gh_step_summary.write(f"| {cell_contents} |\n")
-    return False
-
 
 def main(args: argparse.Namespace):
     input_path: Path = Path(args.input_dir)
