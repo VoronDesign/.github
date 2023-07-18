@@ -71,7 +71,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           path: ${{ github.workspace }}/${{ inputs.cache-directory }}
-          sparse-checkout: ${{ steps.changed-files.outputs.all_changed_files }}
+          sparse-checkout: ${{ steps.check-whitespace.outputs.FILE_LIST_QUOTED }}
           sparse-checkout-cone-mode: false
       - name: List checked out files 📃
         run: |
