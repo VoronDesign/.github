@@ -116,6 +116,7 @@ def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> T
         return stl_has_bad_rotation, github_summary_table
     except Exception as e:
         logger.error("A fatal error occurred during rotation checking", exc_info=e)
+        global critical_error
         critical_error = True
         return True, " | ".join(
             [
@@ -126,6 +127,7 @@ def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> T
             ])
 
 def main(args: argparse.Namespace):
+    global critical_error
     input_path: Path = Path(args.input_dir)
     fail: bool = False
 
