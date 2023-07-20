@@ -22,7 +22,7 @@ on:
     outputs:
       rotation_suggested:
         description: Indicator whether the STL rotator suggested a rotation
-        value: ${{ jobs.run.outputs.ROTATION_SUGGESTED }}
+        value: ${{ jobs.run.outputs.rotation_suggested }}
 jobs:
   run:
     runs-on: ubuntu-latest
