@@ -144,9 +144,9 @@ def main(args: argparse.Namespace):
     # Write ROTATION_SUGGESTED output
     with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
         if fail:
-            f.write("ROTATION_SUGGESTED=true")
+            f.write("ROTATION_SUGGESTED=true\n")
         else:
-            f.write("ROTATION_SUGGESTED=false")
+            f.write("ROTATION_SUGGESTED=false\n")
 
     if (args.fail_on_error and fail) or critical_error:
         sys.exit(255)
