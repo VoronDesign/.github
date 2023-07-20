@@ -73,6 +73,6 @@ jobs:
         name: Upload fixed STLs ⬆️
         uses: actions/upload-artifact@65d862660abb392b8c4a3d1195a2108db131dd05
         with:
-          name: pr_${{github.event.number}}.${{github.run_number}}_fixed_stls
+          name: pr_fixed_stls
           path: ${{runner.temp}}/fixed/
           if-no-files-found: ignore

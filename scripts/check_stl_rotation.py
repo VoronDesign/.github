@@ -2,6 +2,8 @@ import functools
 import itertools
 import logging
 import os
+import random
+import string
 import subprocess
 import sys
 import argparse
@@ -32,46 +34,31 @@ file_handler = FileHandler.FileHandler()
 
 critical_error: bool = False
 
-try:
-    imagekit: ImageKit | None = ImageKit(
-        private_key=os.environ["IMAGEKIT_PRIVATE_KEY"],
-        public_key=os.environ["IMAGEKIT_PUBLIC_KEY"],
-        url_endpoint=os.environ["IMAGEKIT_URL_ENDPOINT"],
-    )
-    imagekit_options: UploadFileRequestOptions = UploadFileRequestOptions(
-        use_unique_file_name=True,
-        folder=os.environ["IMAGEKIT_SUBFOLDER"],
-        is_private_file=False,
-        overwrite_file=True,
-        overwrite_ai_tags=True,
-        overwrite_tags=True,
-        overwrite_custom_metadata=True,
-    )
-except (KeyError, ValueError):
-    imagekit = None
+def get_random_string(length):
+    # choose from all lowercase letter
+    letters = string.ascii_lowercase + string.ascii_uppercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    return result_str
 
 
 def make_image_url(stl_file_path: Path, input_args: argparse.Namespace) -> str:
-    if imagekit is None:
-        logger.warning("No suitable imagekit credentials were found. Skipping image creation!")
-        return ""
-
+    image_file_name = stl_file_path.with_stem(stl_file_path.stem + "_" + get_random_string(8)).with_suffix(".png").name
+    image_out_folder = Path(input_args.output_dir, "img", input_args.imagekit_subfolder)
+    image_out_path = Path(image_out_folder, image_file_name)
+    image_out_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         "stl-thumb",
         stl_file_path.as_posix(),
-        Path(input_args.temp_image_dir, stl_file_path.with_suffix(".png").name).as_posix(),
+        image_out_path.as_posix(),
         "-a",
         "fxaa",
         "-s",
         "300",
     ]
+
     subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-    with open(Path(input_args.temp_image_dir, stl_file_path.with_suffix(".png").name), "rb") as image:
-        result: UploadFileResult = imagekit.upload_file(
-            file=image, file_name=stl_file_path.with_suffix(".png").name, options=imagekit_options
-        )
-    Path(input_args.temp_image_dir, stl_file_path.with_suffix(".png").name).unlink()
-    return result.url
+
+    return f"{input_args.url_endpoint}/{input_args.imagekit_subfolder}/{image_file_name}"
 
 
 def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> Tuple[bool, str]:
@@ -118,13 +105,7 @@ def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> T
         logger.error("A fatal error occurred during rotation checking", exc_info=e)
         global critical_error
         critical_error = True
-        return True, " | ".join(
-            [
-                stl_file_path.name,
-                RESULT_ERROR,
-                '',
-                '',
-            ])
+        return True, f'| {" | ".join([ stl_file_path.name, RESULT_ERROR, "", ""])} |\n'
 
 def main(args: argparse.Namespace):
     global critical_error
@@ -138,6 +119,9 @@ def main(args: argparse.Namespace):
     stls: List[Path] = list(itertools.chain(input_path.glob("**/*.stl"), input_path.glob("**/*.STL")))
     if len(stls) == 0:
         return
+    if len(stls) > 40:
+        logger.warning(f"Excessive amount of STLs ({len(stls)}) detected. I am only going to check 40!")
+        stls = stls[:40]
     with ThreadPoolExecutor() as pool:
         results = pool.map(functools.partial(check_stl_rotation, args), stls)
 
@@ -151,6 +135,12 @@ def main(args: argparse.Namespace):
             gh_step_summary.write(STEP_SUMMARY_PREAMBLE)
             for summary in summaries:
                 gh_step_summary.write(summary)
+
+    with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
+        if fail:
+            f.write("ROTATION_SUGGESTED=true")
+        else:
+            f.write("ROTATION_SUGGESTED=false")
 
     if (args.fail_on_error and fail) or critical_error:
         sys.exit(255)
@@ -170,14 +160,6 @@ if __name__ == "__main__":
         help="Directory containing STL files to be checked",
     )
     parser.add_argument(
-        "-t",
-        "--temp_image_dir",
-        required=False,
-        action="store",
-        type=str,
-        help="Temporary image directory for storing images while uploading to imgur",
-    )
-    parser.add_argument(
         "-o",
         "--output_dir",
         required=False,
@@ -185,7 +167,23 @@ if __name__ == "__main__":
         type=str,
         help="Directory to store the fixed STL files into",
     )
+    parser.add_argument(
+        "-u",
+        "--url_endpoint",
+        required=True,
+        action="store",
+        type=str,
+        help="Imagekit endpoint",
 
+    )
+    parser.add_argument(
+        "-c",
+        "--imagekit_subfolder",
+        required=True,
+        action="store",
+        type=str,
+        help="Image subfolder within the imagekit storage",
+    )
     parser.add_argument(
         "-v",
         "--verbose",

@@ -19,14 +19,15 @@ on:
         required: true
         type: string
         description: IMAGEKIT.io endpoint to push images to
-    secrets:
-      IMAGEKIT_PRIVATE_KEY:
-        required: true
-      IMAGEKIT_PUBLIC_KEY:
-        required: true
+    outputs:
+      rotation_suggested:
+        description: Indicator whether the STL rotator suggested a rotation
+        value: ${{ jobs.run.outputs.ROTATION_SUGGESTED }}
 jobs:
   run:
     runs-on: ubuntu-latest
+    outputs:
+      ROTATION_SUGGESTED: ${{ steps.check-stl-rotation.outputs.rotation_suggested }}
     steps:
       - name: Checkout workflows repo ↪️
         # Check out .github repo to gain access to scripts
@@ -81,17 +82,19 @@ jobs:
         # Run the STL rotation checker
         id: check-stl-rotation
         env:
-          IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
-          IMAGEKIT_PUBLIC_KEY: ${{ secrets.IMAGEKIT_PUBLIC_KEY }}
           IMAGEKIT_URL_ENDPOINT: ${{ inputs.imagekit-url-endpoint }}
           IMAGEKIT_SUBFOLDER: ci_${{github.event.number}}
         run: |-
-          python3 ${{ github.workspace }}/scripts/check_stl_rotation.py -vg --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }} --output_dir=${{runner.temp}}/rotated/ --temp_image_dir=${{runner.temp}}
+          python3 ${{ github.workspace }}/scripts/check_stl_rotation.py -vg \
+          --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }} \
+          --url_endpoint=${{ inputs.imagekit-url-endpoint }} \
+          --imagekit_subfolder=ci_${{github.event.number}} \
+          --output_dir=${{runner.temp}}/rotated
       - if: ${{ always() }}
         # Upload rotated STLs as artifact
         name: Upload rotated STLs ⬆️
         uses: actions/upload-artifact@65d862660abb392b8c4a3d1195a2108db131dd05
         with:
-          name: pr_${{github.event.number}}.${{github.run_number}}_rotated_stls
+          name: pr_rotated_stls
           path: ${{runner.temp}}/rotated/
           if-no-files-found: ignore

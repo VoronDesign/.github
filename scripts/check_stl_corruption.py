@@ -105,7 +105,10 @@ def main(args: argparse.Namespace):
     stls: List[Path] = list(itertools.chain(input_path.glob("**/*.stl"), input_path.glob("**/*.STL")))
     if len(stls) == 0:
         return
-
+    if len(stls) > 40:
+        logger.warning(f"Excessive amount of STLs ({len(stls)}) detected. I am only going to check 40!")
+        stls = stls[:40]
+    
     if args.github_step_summary:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "w") as gh_step_summary:
             gh_step_summary.write(STEP_SUMMARY_PREAMBLE)
