@@ -27,7 +27,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     outputs:
-      ROTATION_SUGGESTED: ${{ steps.check-stl-rotation.outputs.rotation_suggested }}
+      ROTATION_SUGGESTED: ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
     steps:
       - name: Checkout workflows repo ↪️
         # Check out .github repo to gain access to scripts

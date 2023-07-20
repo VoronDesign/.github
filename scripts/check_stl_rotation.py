@@ -2,6 +2,7 @@ import functools
 import itertools
 import logging
 import os
+import re
 import random
 import string
 import subprocess
@@ -35,13 +36,16 @@ file_handler = FileHandler.FileHandler()
 critical_error: bool = False
 
 def get_random_string(length):
-    # choose from all lowercase letter
+    # choose from all lower/uppercase letters
     letters = string.ascii_lowercase + string.ascii_uppercase
     result_str = ''.join(random.choice(letters) for i in range(length))
     return result_str
 
 
 def make_image_url(stl_file_path: Path, input_args: argparse.Namespace) -> str:
+    # Generate the filename:
+    #  Replace stl with png
+    #  Append 8 digit random string to avoid collisions. This is necessary so that old CI runs still show their respective images"
     image_file_name = stl_file_path.with_stem(stl_file_path.stem + "_" + get_random_string(8)).with_suffix(".png").name
     image_out_folder = Path(input_args.output_dir, "img", input_args.imagekit_subfolder)
     image_out_path = Path(image_out_folder, image_file_name)
@@ -57,8 +61,8 @@ def make_image_url(stl_file_path: Path, input_args: argparse.Namespace) -> str:
     ]
 
     subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-
-    return f"{input_args.url_endpoint}/{input_args.imagekit_subfolder}/{image_file_name}"
+    # Imagekit replaces "[" and "]" with underscores
+    return re.sub("\]|\[", "_", f"{input_args.url_endpoint}/{input_args.imagekit_subfolder}/{image_file_name}".replace(""))
 
 
 def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> Tuple[bool, str]:
@@ -130,12 +134,14 @@ def main(args: argparse.Namespace):
         summaries.append(summary)
         fail = result_fail or fail
 
+    # Write github step summary
     if args.github_step_summary:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "w") as gh_step_summary:
             gh_step_summary.write(STEP_SUMMARY_PREAMBLE)
             for summary in summaries:
                 gh_step_summary.write(summary)
 
+    # Write ROTATION_SUGGESTED output
     with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
         if fail:
             f.write("ROTATION_SUGGESTED=true")
