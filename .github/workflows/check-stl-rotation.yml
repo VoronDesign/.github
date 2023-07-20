@@ -90,9 +90,6 @@ jobs:
           --url_endpoint=${{ inputs.imagekit-url-endpoint }} \
           --imagekit_subfolder=ci_${{github.event.number}} \
           --output_dir=${{runner.temp}}/rotated
-      - name: Debug check-stl-rotation Output
-        run: |
-          echo ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
       - if: ${{ always() }}
         # Upload rotated STLs as artifact
         name: Upload rotated STLs ⬆️
