@@ -27,7 +27,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     outputs:
-      ROTATION_SUGGESTED: ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
+      rotation_suggested: ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
     steps:
       - name: Checkout workflows repo ↪️
         # Check out .github repo to gain access to scripts
@@ -90,6 +90,9 @@ jobs:
           --url_endpoint=${{ inputs.imagekit-url-endpoint }} \
           --imagekit_subfolder=ci_${{github.event.number}} \
           --output_dir=${{runner.temp}}/rotated
+      - name: Debug check-stl-rotation Output
+        run: |
+          echo ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
       - if: ${{ always() }}
         # Upload rotated STLs as artifact
         name: Upload rotated STLs ⬆️

@@ -62,7 +62,7 @@ def make_image_url(stl_file_path: Path, input_args: argparse.Namespace) -> str:
 
     subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
     # Imagekit replaces "[" and "]" with underscores
-    return re.sub("\]|\[", "_", f"{input_args.url_endpoint}/{input_args.imagekit_subfolder}/{image_file_name}".replace(""))
+    return re.sub("\]|\[", "_", f"{input_args.url_endpoint}/{input_args.imagekit_subfolder}/{image_file_name}")
 
 
 def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> Tuple[bool, str]:
