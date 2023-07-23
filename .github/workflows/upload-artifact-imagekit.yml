@@ -40,6 +40,7 @@ jobs:
         id: pip-install-packages
         run: |
           pip install imagekitio
+      - run: mkdir -p ${{github.workspace}}/artifact/
       - name: Download artifact
           # Download the artifact that was stored during the PR CI process
           # This file contains the action_run_id and the pull_request number

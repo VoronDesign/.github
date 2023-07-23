@@ -1,5 +1,5 @@
 ---
-name: Post PR comment and assign labels
+name: Process PR metadata, comment and assign labels
 on:
   workflow_call:
 jobs:
@@ -17,11 +17,6 @@ jobs:
         uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0
         with:
           python-version: '3.11'
-      - name: Install python packages 🛠️
-          # Install required packages
-        id: pip-install-packages
-        run: |
-          pip install requests
       - name: Download artifact
           # Download the artifact that was stored during the PR CI process
           # This file contains the action_run_id and the pull_request number
