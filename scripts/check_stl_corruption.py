@@ -136,7 +136,7 @@ def main(args: argparse.Namespace):
         return_status = max(process_stl(stl_file=stl, args=args), return_status)
 
     with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-        f.write(f"extended_outcome={return_status_string_map[return_status]}\n")
+        f.write(f"extended-outcome={return_status_string_map[return_status]}\n")
 
     if return_status > ReturnStatus.SUCCESS and args.fail_on_error:
         logger.error("Error detected during STL checking!")

@@ -154,7 +154,7 @@ def main(args: argparse.Namespace):
 
     # Write extended_outcome output
     with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-        f.write(f"extended_outcome={return_status_string_map[return_status]}\n")
+        f.write(f"extended-outcome={return_status_string_map[return_status]}\n")
 
 
 if __name__ == "__main__":
