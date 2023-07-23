@@ -7,11 +7,31 @@ from pathlib import Path
 from typing import List
 
 from admesh import Stl
+from enum import IntEnum
+from typing import Dict
+
+
+class ReturnStatus(IntEnum):
+    SUCCESS = 0
+    WARNING = 1
+    FAILURE = 2
+    EXCEPTION = 3
+
+return_status_string_map: Dict[ReturnStatus, str] = {
+    ReturnStatus.SUCCESS: 'success',
+    ReturnStatus.WARNING: 'warning',
+    ReturnStatus.FAILURE: 'failure',
+    ReturnStatus.EXCEPTION: 'exception'
+}
+
+RESULT_SUCCESS = "✅ PASSED"
+RESULT_WARNING = "⚠️ WARNING"
+RESULT_FAILURE = "❌ FAILURE"
+RESULT_EXCEPTION = "❌ EXCEPTION"
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
-from .common import ReturnStatus, return_status_string_map, RESULT_SUCCESS, RESULT_EXCEPTION, RESULT_FAILURE
 
 
 STEP_SUMMARY_PREAMBLE = """## STL corruption check summary
@@ -117,7 +137,7 @@ def main(args: argparse.Namespace):
 
     with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
         f.write(f"extended_outcome={return_status_string_map[return_status]}\n")
-        
+
     if return_status > ReturnStatus.SUCCESS and args.fail_on_error:
         logger.error("Error detected during STL checking!")
         sys.exit(255)

@@ -14,7 +14,28 @@ from typing import Dict, Any, List, Tuple
 from tweaker3 import FileHandler
 from tweaker3.MeshTweaker import Tweak
 
-from .common import ReturnStatus, return_status_string_map, RESULT_SUCCESS, RESULT_WARNING, RESULT_EXCEPTION
+from enum import IntEnum
+from typing import Dict
+
+
+class ReturnStatus(IntEnum):
+    SUCCESS = 0
+    WARNING = 1
+    FAILURE = 2
+    EXCEPTION = 3
+
+return_status_string_map: Dict[ReturnStatus, str] = {
+    ReturnStatus.SUCCESS: 'success',
+    ReturnStatus.WARNING: 'warning',
+    ReturnStatus.FAILURE: 'failure',
+    ReturnStatus.EXCEPTION: 'exception'
+}
+
+RESULT_SUCCESS = "✅ PASSED"
+RESULT_WARNING = "⚠️ WARNING"
+RESULT_FAILURE = "❌ FAILURE"
+RESULT_EXCEPTION = "❌ EXCEPTION"
+
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
