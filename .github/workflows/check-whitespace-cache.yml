@@ -115,10 +115,11 @@ jobs:
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
         with:
           repository: VoronDesign/.github
+          path: ${{ github.workspace }}/workflows_repo
       - if: ${{ always() && inputs.parent-job-name != ''}}
         name: Output Job ID ⬆️
         id: output_job_id
         env:
           INPUT_JOB_NAME: ${{ inputs.parent-job-name }} / ${{ github.job }}
           INPUT_GITHUB_TOKEN: ${{ github.token }}
-        run: bash scripts/get_job_id.sh
+        run: bash ${{ github.workspace }}/workflows_repo/scripts/get_job_id.sh
