@@ -30,6 +30,11 @@ jobs:
       stl: ${{ steps.filter.outputs.stl }}
       yaml: ${{ steps.filter.outputs.yaml }}
     steps:
+      - name: Checkout workflows repo ↪️
+        # Check out .github repo to gain access to scripts
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          repository: VoronDesign/.github
       - id: changed-files
         # Check out files, separate with newlines to catch whitespace in filenames
         uses: tj-actions/changed-files@v37
