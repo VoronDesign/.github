@@ -47,10 +47,6 @@ def upload_image(input_args: argparse.Namespace, image_path: Path) -> bool:
 def main(args: argparse.Namespace):
     input_path: Path = Path(args.input_folder)
 
-    if args.verbose:
-        logger.setLevel("INFO")
-    
-
     logger.info(f"Processing Image files in {str(input_path)}")
     images: List[Path] = list(input_path.glob("**/*.png"))
     if len(images) == 0:
