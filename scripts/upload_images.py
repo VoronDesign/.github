@@ -42,6 +42,7 @@ def upload_image(input_args: argparse.Namespace, image_path: Path) -> bool:
         result: UploadFileResult = imagekit.upload_file(
             file=image, file_name=image_path.name, options=imagekit_options
         )
+    print(result)
     return result.url != ""
 
 def main(args: argparse.Namespace):
