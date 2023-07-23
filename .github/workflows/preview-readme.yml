@@ -17,9 +17,23 @@ on:
         type: string
         required: false
         default: pr-files
+      parent-job-name:
+        description: Name of the parent job, so that this job can grab its own ID
+        type: string
+        required: true
+    outputs:
+      extended-outcome:
+        description: Outcome of the step of interest
+        value: ${{ jobs.run.outputs.extended-outcome }}
+      numeric-job-id:
+        description: Numeric ID of this Job
+        value: ${{ jobs.run.outputs.numeric-job-id }}
 jobs:
   run:
     runs-on: ubuntu-latest
+    outputs:
+      extended-outcome: ${{ steps.preview-readme.outcome }}
+      numeric-job-id: ${{ steps.output_job_id.outputs.job_id }}
     steps:
       - name: Checkout workflows repo ↪️
         # Check out .github repo to gain access to scripts
@@ -44,8 +58,16 @@ jobs:
         run: |
           pip install pyyaml
       - name: Preview README.md 📃
+        id: preview-readme
         # Preview the new readme file
         run: |-
           cd ${{ github.workspace }}/${{ inputs.cache-directory }}/${{ inputs.subdirectory }}
           export PREVIEW=true
           python ${{ github.workspace }}/scripts/generate_readme.py
+      - if: ${{ always() && inputs.parent-job-name != ''}}
+        name: Output Job ID ⬆️
+        id: output_job_id
+        env:
+          INPUT_JOB_NAME: ${{ inputs.parent-job-name }} / ${{ github.job }}
+          INPUT_GITHUB_TOKEN: ${{ github.token }}
+        run: bash scripts/get_job_id.sh
