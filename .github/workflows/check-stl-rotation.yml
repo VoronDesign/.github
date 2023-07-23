@@ -19,15 +19,23 @@ on:
         required: true
         type: string
         description: IMAGEKIT.io endpoint to push images to
+      parent-job-name:
+          description: Name of the parent job, so that this job can grab its own ID
+          type: string
+          required: true
     outputs:
-      rotation_suggested:
-        description: Indicator whether the STL rotator suggested a rotation
-        value: ${{ jobs.run.outputs.rotation_suggested }}
+      extended-outcome:
+        description: Outcome of the step of interest
+        value: ${{ jobs.run.outputs.extended-outcome }}
+      numeric-job-id:
+        description: Numeric ID of this Job
+        value: ${{ jobs.run.outputs.numeric-job-id }}
 jobs:
   run:
     runs-on: ubuntu-latest
     outputs:
-      rotation_suggested: ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
+      extended-outcome: ${{ steps.check-stl-rotation.outputs.ROTATION_SUGGESTED }}
+      numeric-job-id: ${{ steps.output_job_id.job_id }}
     steps:
       - name: Checkout workflows repo ↪️
         # Check out .github repo to gain access to scripts
@@ -90,11 +98,11 @@ jobs:
           --url_endpoint=${{ inputs.imagekit-url-endpoint }} \
           --imagekit_subfolder=ci_${{github.event.number}} \
           --output_dir=${{runner.temp}}/rotated
-      - if: ${{ always() }}
+      - if: ${{ always() && inputs.parent-job-name != ''}}
         name: Output Job ID ⬆️
         id: output_job_id
         env:
-          INPUT_JOB_NAME: ${{ github.job }}
+          INPUT_JOB_NAME: ${{ inputs.parent-job-name }} / ${{ github.job }}
           INPUT_GITHUB_TOKEN: ${{ github.token }}
         run: bash scripts/get_job_id.sh
       - if: ${{ always() }}
