@@ -42,7 +42,7 @@ def upload_image(input_args: argparse.Namespace, image_path: Path) -> bool:
         result: UploadFileResult = imagekit.upload_file(
             file=image, file_name=image_path.name, options=imagekit_options
         )
-    print(result)
+    logger.warning(result)
     return result.url != ""
 
 def main(args: argparse.Namespace):
@@ -55,7 +55,7 @@ def main(args: argparse.Namespace):
     with ThreadPoolExecutor() as pool:
         results = pool.map(functools.partial(upload_image, args), images)
 
-    if args.fail_on_error and not all(results):
+    if not all(results):
         sys.exit(255)
 
 
