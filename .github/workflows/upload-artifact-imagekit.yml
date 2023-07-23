@@ -64,7 +64,7 @@ jobs:
             });
             var fs = require('fs');
             fs.writeFileSync('${{github.workspace}}/artifact/${{ inputs.artifact_name }}.zip', Buffer.from(download.data));
-      - run: unzip ${{github.workspace}}/artifact/${{ inputs.artifact_name }}.zip ${{github.workspace}}/artifact/
+      - run: unzip ${{github.workspace}}/artifact/${{ inputs.artifact_name }}.zip -d ${{github.workspace}}/artifact/
       - name: Upload Images 📃
         id: upload-images
           # Upload images contained in the image artifact
