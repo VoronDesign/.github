@@ -21,6 +21,7 @@ try:
         url_endpoint=os.environ["IMAGEKIT_URL_ENDPOINT"],
     )
     imagekit_options_common: UploadFileRequestOptions = UploadFileRequestOptions(
+        use_unique_file_name=False,
         is_private_file=False,
         overwrite_file=True,
         overwrite_ai_tags=True,
