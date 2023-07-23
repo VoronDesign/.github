@@ -11,12 +11,10 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
-
-from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
-from imagekitio.models.results import UploadFileResult
 from tweaker3 import FileHandler
 from tweaker3.MeshTweaker import Tweak
-from imagekitio import ImageKit
+
+from .common import ReturnStatus, return_status_string_map, RESULT_SUCCESS, RESULT_WARNING, RESULT_EXCEPTION
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -27,13 +25,8 @@ STEP_SUMMARY_PREAMBLE = """## STL rotation check summary
 | ----- | --- | --- | --- |
 """
 
-RESULT_OK = "✅ PASSED"
-RESULT_WARNING = "⚠️ WARNING"
-RESULT_ERROR = "❌ FAILED"
-
 file_handler = FileHandler.FileHandler()
 
-critical_error: bool = False
 
 def get_random_string(length):
     # choose from all lower/uppercase letters
@@ -65,10 +58,10 @@ def make_image_url(stl_file_path: Path, input_args: argparse.Namespace) -> str:
     return re.sub("\]|\[", "_", f"{input_args.url_endpoint}/{input_args.imagekit_subfolder}/{image_file_name}")
 
 
-def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> Tuple[bool, str]:
+def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> Tuple[ReturnStatus, str]:
     logger.info(f"Checking {stl_file_path.as_posix()}")
     try:
-        stl_has_bad_rotation: bool = False
+        stl_return_status: ReturnStatus = ReturnStatus.SUCCESS
         rotated_image_url: str = ""
         original_image_url: str = make_image_url(stl_file_path=stl_file_path, input_args=input_args)
 
@@ -90,13 +83,13 @@ def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> T
                     objects=objs, info={0: {"matrix": x.matrix, "tweaker_stats": x}}, outputfile=out_stl_path.as_posix()
                 )
                 rotated_image_url = make_image_url(stl_file_path=out_stl_path, input_args=input_args)
-            stl_has_bad_rotation = True
+            stl_return_status = ReturnStatus.WARNING
         else:
             logger.info(f"STL {stl_file_path.as_posix()} does not contain any errors!")
         github_summary_table_contents: str = " | ".join(
             [
                 stl_file_path.name,
-                RESULT_WARNING if stl_has_bad_rotation else RESULT_OK,
+                RESULT_WARNING if stl_return_status == ReturnStatus.WARNING else RESULT_SUCCESS,
                 f'[<img src="{original_image_url}" width="100" height="100">]({original_image_url})',
                 f'[<img src="{rotated_image_url}" width="100" height="100">]({rotated_image_url})'
                 if rotated_image_url != ""
@@ -104,17 +97,14 @@ def check_stl_rotation(input_args: argparse.Namespace, stl_file_path: Path) -> T
             ]
         )
         github_summary_table = f"| {github_summary_table_contents} |\n"
-        return stl_has_bad_rotation, github_summary_table
+        return stl_return_status, github_summary_table
     except Exception as e:
         logger.error("A fatal error occurred during rotation checking", exc_info=e)
-        global critical_error
-        critical_error = True
-        return True, f'| {" | ".join([ stl_file_path.name, RESULT_ERROR, "", ""])} |\n'
+        return ReturnStatus.EXCEPTION, f'| {" | ".join([ stl_file_path.name, RESULT_EXCEPTION, "", ""])} |\n'
 
 def main(args: argparse.Namespace):
-    global critical_error
     input_path: Path = Path(args.input_dir)
-    fail: bool = False
+    return_status: ReturnStatus = ReturnStatus.SUCCESS
 
     if args.verbose:
         logger.setLevel("INFO")
@@ -130,9 +120,9 @@ def main(args: argparse.Namespace):
         results = pool.map(functools.partial(check_stl_rotation, args), stls)
 
     summaries: List[str] = []
-    for result_fail, summary in results:
+    for stl_result, summary in results:
         summaries.append(summary)
-        fail = result_fail or fail
+        return_status = max(return_status, stl_result)
 
     # Write github step summary
     if args.github_step_summary:
@@ -141,15 +131,9 @@ def main(args: argparse.Namespace):
             for summary in summaries:
                 gh_step_summary.write(summary)
 
-    # Write ROTATION_SUGGESTED output
+    # Write extended_outcome output
     with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-        if fail:
-            f.write("ROTATION_SUGGESTED=true\n")
-        else:
-            f.write("ROTATION_SUGGESTED=false\n")
-
-    if (args.fail_on_error and fail) or critical_error:
-        sys.exit(255)
+        f.write(f"extended_outcome={return_status_string_map[return_status]}\n")
 
 
 if __name__ == "__main__":
@@ -196,13 +180,6 @@ if __name__ == "__main__":
         required=False,
         action="store_true",
         help="Print debug output to stdout",
-    )
-    parser.add_argument(
-        "-f",
-        "--fail_on_error",
-        required=False,
-        action="store_true",
-        help="Whether to return an error exit code if one of the STLs is badly oriented",
     )
     parser.add_argument(
         "-g",

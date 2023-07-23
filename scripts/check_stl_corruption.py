@@ -11,6 +11,8 @@ from admesh import Stl
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
+from .common import ReturnStatus, return_status_string_map, RESULT_SUCCESS, RESULT_EXCEPTION, RESULT_FAILURE
+
 
 STEP_SUMMARY_PREAMBLE = """## STL corruption check summary
 
@@ -18,11 +20,8 @@ STEP_SUMMARY_PREAMBLE = """## STL corruption check summary
 | ----- | --- | --- | --- | --- | --- | --- | --- |
 """
 
-RESULT_OK = "✅ PASSED"
-RESULT_ERROR = "❌ FAILED"
 
-
-def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
+def process_stl(stl_file: Path, args: argparse.Namespace) -> ReturnStatus:
     logger.info(f"Checking {stl_file}")
     try:
         stl: Stl = Stl(stl_file.as_posix())
@@ -41,7 +40,7 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
                     cell_contents: str = " | ".join(
                         [
                             stl_file.name,
-                            RESULT_ERROR,
+                            RESULT_FAILURE,
                             str(stl.stats["edges_fixed"]),
                             str(stl.stats["backwards_edges"]),
                             str(stl.stats["degenerate_facets"]),
@@ -56,7 +55,7 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
                 out_stl_path.parent.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Saving fixed STL to: {out_stl_path}")
                 stl.write_ascii(out_stl_path.as_posix())
-            return True
+            return ReturnStatus.FAILURE
         else:
             logger.info(f"STL {stl_file.as_posix()} does not contain any errors!")
             if args.github_step_summary:
@@ -64,7 +63,7 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
                     cell_contents: str = " | ".join(
                         [
                             stl_file.name,
-                            RESULT_OK,
+                            RESULT_SUCCESS,
                             "0",
                             "0",
                             "0",
@@ -74,7 +73,7 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
                         ]
                     )
                     gh_step_summary.write(f"| {cell_contents} |\n")
-        return False
+        return ReturnStatus.SUCCESS
     except Exception as e:
         logger.error("A fatal error occurred during rotation checking", exc_info=e)
         if args.github_step_summary:
@@ -82,7 +81,7 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
                 cell_contents: str = " | ".join(
                     [
                         stl_file.name,
-                        RESULT_ERROR,
+                        RESULT_EXCEPTION,
                         "0",
                         "0",
                         "0",
@@ -92,11 +91,11 @@ def process_stl(stl_file: Path, args: argparse.Namespace) -> bool:
                     ]
                 )
                 gh_step_summary.write(f"| {cell_contents} |\n")
-        return True
+        return ReturnStatus.EXCEPTION
 
 def main(args: argparse.Namespace):
     input_path: Path = Path(args.input_dir)
-    fail: bool = False
+    return_status: ReturnStatus = ReturnStatus.SUCCESS
 
     if args.verbose:
         logger.setLevel("INFO")
@@ -114,8 +113,12 @@ def main(args: argparse.Namespace):
             gh_step_summary.write(STEP_SUMMARY_PREAMBLE)
 
     for stl in stls:
-        fail = process_stl(stl_file=stl, args=args) or fail
-    if fail and args.fail_on_error:
+        return_status = max(process_stl(stl_file=stl, args=args), return_status)
+
+    with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
+        f.write(f"extended_outcome={return_status_string_map[return_status]}\n")
+        
+    if return_status > ReturnStatus.SUCCESS and args.fail_on_error:
         logger.error("Error detected during STL checking!")
         sys.exit(255)
 
