@@ -32,7 +32,7 @@ except (KeyError, ValueError):
     imagekit_options_common = None
 
 def upload_image(input_args: argparse.Namespace, image_path: Path) -> bool:
-    if imagekit is None or imagekit_options is None:
+    if imagekit is None or imagekit_options_common is None:
         logger.warning("No suitable imagekit credentials were found. Skipping image creation!")
         return False
 
