@@ -46,31 +46,21 @@ jobs:
             var fs = require('fs');
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
       - run: unzip pr.zip
-      - name: Get action_run_id and pr_number
-          # The PR file contains two files, one with the PR number and one with the action run ID
-          # Store them in outputs so they're easily accessible to other steps in this workflow
-        id: get_artifact_values
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            var fs = require('fs');
-            var pr_number = String(fs.readFileSync('${{github.workspace}}/pr_number'));
-            var action_run_id = String(fs.readFileSync('${{github.workspace}}/action_run_id'));
-            core.setOutput('pr_number', pr_number);
-            core.setOutput('action_run_id', action_run_id);
       - name: Generate PR Comment 📃
         id: generate_pr_comment
           # Generate the contents of the PR comment, this also stores the labels to be set on the PR
           # in the output variable "LABELS_TO_SET"
         run: |
-          python3 ${{ github.workspace }}/scripts/generate_pr_comment.py --repository=${{ github.repository }} --action_id=${{ steps.get_artifact_values.outputs.action_run_id }} --out_file=${{ github.workspace }}/pr/pr-comment.md
+          python3 ${{ github.workspace }}/scripts/process_pr.py \
+          --repository=${{ github.repository }} \
+          --input_folder=${{github.workspace}} \
+          --out_file=${{ github.workspace }}/pr-comment.md
       - name: Post/Update PR Comment 📣
           # Actually post/update the comment in the PR
         uses: thollander/actions-comment-pull-request@8c77f42bbcc27c832a3a5962c8f9a60e34b594f3
         with:
-          filePath: ${{ github.workspace }}/pr/pr-comment.md
-          pr_number: ${{ steps.get_artifact_values.outputs.pr_number }}
+          filePath: ${{ github.workspace }}/pr-comment.md
+          pr_number: ${{ steps.generate_pr_comment.outputs.pr-number }}
           comment_tag: voron_users_ci
       - name: Set labels on PR
           # The python script determined which labels should be set. By using PUT, this workflow will
@@ -82,5 +72,5 @@ jobs:
           --header "Accept: application/vnd.github+json" \
           --header "Authorization: Bearer $GH_TOKEN" \
           --header "X-GitHub-Api-Version: 2022-11-28" \
-          --url https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.get_artifact_values.outputs.pr_number }}/labels \
-          -d '{"labels":[${{ steps.generate_pr_comment.outputs.LABELS_TO_SET}}]}'
+          --url https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.generate_pr_comment.outputs.pr-number }}/labels \
+          -d '{"labels":[${{ steps.generate_pr_comment.outputs.labels-to-set}}]}'
