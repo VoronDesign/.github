@@ -44,8 +44,8 @@ def get_results_from_folder(repository: str, action_id: str, folder: Path) -> Tu
         job_id: str = job_id_file.read_text()
         error_label: str = error_label_file.read_text()
         comment_line: str = f"| {folder.name} | {result_map[result]} | {build_summary_detail_url(repository, action_id, job_id)} | {build_log_detail_url(repository, action_id, job_id)} |\n"
-        label = error_label if result != 'success' else None
-        return comment_line, f'"{label}"'
+        label = f'"{error_label}"' if result != 'success' else None
+        return comment_line, label
     return None, None
 
 def main(args: argparse.Namespace):
