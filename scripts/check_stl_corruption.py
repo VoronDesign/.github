@@ -24,7 +24,7 @@ return_status_string_map: Dict[ReturnStatus, str] = {
     ReturnStatus.EXCEPTION: 'exception'
 }
 
-RESULT_SUCCESS = "✅ PASSED"
+RESULT_SUCCESS = "✅ SUCCESS"
 RESULT_WARNING = "⚠️ WARNING"
 RESULT_FAILURE = "❌ FAILURE"
 RESULT_EXCEPTION = "❌ EXCEPTION"

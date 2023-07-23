@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       extended-outcome: ${{ steps.check-stl-rotation.outputs.extended-outcome }}
-      numeric-job-id: ${{ steps.output_job_id.job_id }}
+      numeric-job-id: ${{ steps.output_job_id.outputs.job_id }}
     steps:
       - name: Checkout workflows repo ↪️
         # Check out .github repo to gain access to scripts

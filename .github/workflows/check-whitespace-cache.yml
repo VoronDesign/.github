@@ -40,7 +40,7 @@ jobs:
       stl: ${{ steps.filter.outputs.stl }}
       yaml: ${{ steps.filter.outputs.yaml }}
       extended-outcome: ${{ steps.check-whitespace.outcome }}
-      numeric-job-id: ${{ steps.output_job_id.job_id }}
+      numeric-job-id: ${{ steps.output_job_id.outputs.job_id }}
     steps:
       - id: changed-files
         # Check out files, separate with newlines to catch whitespace in filenames
