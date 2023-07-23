@@ -38,7 +38,7 @@ def upload_image(input_args: argparse.Namespace, image_path: Path) -> bool:
 
     with open(image_path, "rb") as image:
         imagekit_options: UploadFileRequestOptions = imagekit_options_common
-        imagekit_options.folder = image_path.parent.relative_to(Path(input_args.input_folder))
+        imagekit_options.folder = image_path.parent.relative_to(Path(input_args.input_folder)).as_posix()
         result: UploadFileResult = imagekit.upload_file(
             file=image, file_name=image_path.name, options=imagekit_options
         )
