@@ -61,9 +61,9 @@ jobs:
         id: preview-readme
         # Preview the new readme file
         run: |-
-          python3 ${{ github.workspace }}/scripts/generate_readme.py
-          --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }}/${{ inputs.subdirectory }}
-          --json=false
+          python3 ${{ github.workspace }}/scripts/generate_readme.py \
+          --input_dir=${{ github.workspace }}/${{ inputs.cache-directory }}/${{ inputs.subdirectory }} \
+          --json=false \
           --preview=true
       - if: ${{ always() && inputs.parent-job-name != ''}}
         name: Output Job ID ⬆️

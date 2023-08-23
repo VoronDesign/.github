@@ -60,9 +60,9 @@ jobs:
       - name: Generate README.md 📃
         # Generate the new readme file
         run: |
-          python3 ${{ github.workspace }}/scripts/generate_readme.py
-          --input_dir=${{ github.workspace }}/sparse-repo/${{ inputs.subdirectory }}
-          --json=true
+          python3 ${{ github.workspace }}/scripts/generate_readme.py \
+          --input_dir=${{ github.workspace }}/sparse-repo/${{ inputs.subdirectory }} \
+          --json=true \
           --preview=false
       - name: Commit files 💾
         # Commit the new readme using the GH bot credentials
