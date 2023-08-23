@@ -26,7 +26,7 @@ contact the admins on Discord to have your mod moved to this folder.
 
 header = """
 | Creator | Mod title | Description | Printer compatibility | Last Changed |
-| --- | --- | ----- | --- | --- |
+| --- | --- | ----- | --- | ----- |
 """
 
 
@@ -39,7 +39,6 @@ def main(args: argparse.Namespace):
     for yml_file in sorted(yaml_list):
         with open(yml_file, "r") as f:
             content = yaml.safe_load(f)
-            print(['git', '-C', args.input_dir, 'log', '-n', '1', '--date=iso-local', '--format=%cd', '--', yml_file.relative_to(args.input_dir).parent.as_posix()])
             mods.append({
                 "path": yml_file.relative_to(args.input_dir).parent.as_posix(),
                 "title": textwrap.shorten(content["title"], width=35, placeholder="..."),
@@ -51,7 +50,7 @@ def main(args: argparse.Namespace):
 
     if args.json == 'true':
         with open(Path(args.input_dir, "mods.json"), "w", encoding='utf-8') as f:
-            json.dump(mods, f)
+            json.dump(mods, f, indent=4)
 
     with open(os.environ["GITHUB_STEP_SUMMARY"], "w", encoding='utf-8') as f:
         f.write(header)
