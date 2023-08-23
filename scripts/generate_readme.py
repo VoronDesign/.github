@@ -42,10 +42,10 @@ def main(args: argparse.Namespace):
             mods.append({
                 "path": yml_file.relative_to(args.input_dir).parent.as_posix(),
                 "title": textwrap.shorten(content["title"], width=35, placeholder="..."),
-                "creator":  yml_file.parts[0],
+                "creator":  yml_file.relative_to(args.input_dir).parts[0],
                 "description": textwrap.shorten(content["description"], width=70, placeholder="..."),
                 "printer_compatibility": f'{", ".join(sorted(content["printer_compatibility"]))}',
-                "last_changed": subprocess.run(['git', 'log', '-n', '1', '--date=iso-local', '--format=%cd', '--', yml_file.parent.as_posix()], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+                "last_changed": subprocess.run(['git', '-C', args.input_dir, 'log', '-n', '1', '--date=iso-local', '--format=%cd', '--', yml_file.relative_to(args.input_dir).parent.as_posix()], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
             })
 
     if args.json == 'true':
