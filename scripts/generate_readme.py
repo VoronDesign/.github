@@ -6,7 +6,6 @@ import argparse
 import textwrap
 import logging
 import subprocess
-import git
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
