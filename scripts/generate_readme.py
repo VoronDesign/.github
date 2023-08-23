@@ -39,6 +39,7 @@ def main(args: argparse.Namespace):
     for yml_file in sorted(yaml_list):
         with open(yml_file, "r") as f:
             content = yaml.safe_load(f)
+            print(['git', '-C', args.input_dir, 'log', '-n', '1', '--date=iso-local', '--format=%cd', '--', yml_file.relative_to(args.input_dir).parent.as_posix()])
             mods.append({
                 "path": yml_file.relative_to(args.input_dir).parent.as_posix(),
                 "title": textwrap.shorten(content["title"], width=35, placeholder="..."),
