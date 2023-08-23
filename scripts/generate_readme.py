@@ -6,6 +6,7 @@ import argparse
 import textwrap
 import logging
 import subprocess
+import git
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ def main(args: argparse.Namespace):
                 "creator":  yml_file.parts[0],
                 "description": textwrap.shorten(content["description"], width=70, placeholder="..."),
                 "printer_compatibility": f'{", ".join(sorted(content["printer_compatibility"]))}',
-                "last_changed": subprocess.run(['git', 'log', '-n', '1', '--date=iso-local', '--format=%cd', '--', yml_file.parent.as_posix()], stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
+                "last_changed": subprocess.run(['git', 'log', '-n', '1', '--date=iso-local', '--format=%cd', '--', yml_file.parent.as_posix()], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
             })
 
     if args.json == 'true':
