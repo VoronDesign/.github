@@ -20,6 +20,11 @@ on:
         description: Name of the parent job, so that this job can grab its own ID
         type: string
         required: true
+      check-whitespace:
+        description: Boolean indicating whether whitespace in filenames should be allowed
+        type: boolean
+        required: false
+        default: true
     outputs:
       stl:
         description: Were STLs changed on this PR
@@ -47,7 +52,8 @@ jobs:
         uses: tj-actions/changed-files@v37
         with:
           separator: "\n"
-      - id: check-whitespace
+      - if: ${{ inputs.check-whitespace == true }}
+        id: check-whitespace
         # Check whitespace in files obtained by the changed-files step
         name: Check whitespace in files/folders 🔍
         shell: bash
@@ -56,7 +62,6 @@ jobs:
         run: |
           echo "### The following changes were detected:" >> $GITHUB_STEP_SUMMARY
           ret_val=0
-          echo "FILE_LIST_QUOTED<<EOF" >> $GITHUB_OUTPUT
           IFS=$'\n'
           for file in $TMP_FILES; do
             if [[ $file = *[[:space:]]* ]]; then
@@ -67,23 +72,29 @@ jobs:
               echo "The following file is ok: $file"
               echo "OK: \`$file\`" >> $GITHUB_STEP_SUMMARY
             fi
-            echo $file | sed 's/[][]/\\&/g' >> $GITHUB_OUTPUT
           done
           echo "EOF" >> $GITHUB_OUTPUT
           unset IFS
           exit $ret_val
-      - name: Debug FILE_LIST_QUOTED
+      - id: escape-filenames
+        shell: bash
         env:
-          FILE_LIST: ${{ steps.check-whitespace.outputs.FILE_LIST_QUOTED }}
+          TMP_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          echo $FILE_LIST
+          echo "FILE_LIST_SANITIZED<<EOF" >> $GITHUB_OUTPUT
+          IFS=$'\n'
+          for file in $TMP_FILES; do
+            echo $file | sed 's/[][]/\\&/g' >> $GITHUB_OUTPUT
+          done
+          echo "EOF" >> $GITHUB_OUTPUT
+          unset IFS
       - name: Perform Sparse Checkout ↪️
         # Perform a sparse checkout, checking out only the files of the PR
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
         with:
           ref: ${{ inputs.branch }}
           path: ${{ github.workspace }}/${{ inputs.cache-directory }}
-          sparse-checkout: ${{ steps.check-whitespace.outputs.FILE_LIST_QUOTED }}
+          sparse-checkout: ${{ steps.escape-filenames.outputs.FILE_LIST_SANITIZED }}
           sparse-checkout-cone-mode: false
       - name: List checked out files 📃
         run: |

@@ -60,9 +60,10 @@ jobs:
       - name: Generate README.md 📃
         # Generate the new readme file
         run: |
-          cd ${{ github.workspace }}/sparse-repo/${{ inputs.subdirectory }}
-          export PREVIEW=false
           python3 ${{ github.workspace }}/scripts/generate_readme.py
+          --input_dir=${{ github.workspace }}/sparse-repo/${{ inputs.subdirectory }}
+          --json=true
+          --preview=false
       - name: Commit files 💾
         # Commit the new readme using the GH bot credentials
         run: |
@@ -70,6 +71,7 @@ jobs:
           git config user.email ${{ inputs.commit_email }}
           git config user.name ${{ inputs.commit_user }}
           git add ${{ inputs.subdirectory }}/README.md
+          git add ${{ inputs.subdirectory }}/mods.json
           git commit -m "${{ inputs.commit_msg }}" || true
       - name: Push changes ⬆️
         # Push the changes
