@@ -46,6 +46,7 @@ jobs:
           sparse-checkout: |
             ${{ inputs.subdirectory }}/**/.metadata.yml
             ${{ inputs.subdirectory }}/README.md
+            ${{ inputs.subdirectory }}/mods.json
           token: ${{ secrets.VORON_BOT_GITHUB_PAT }}
           sparse-checkout-cone-mode: false
       - name: Setup python 3.11 🐍
