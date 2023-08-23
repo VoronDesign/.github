@@ -59,7 +59,7 @@ def main(args: argparse.Namespace):
             f.write(f'| {mod["creator"] if mod["creator"] != prev_username else ""} | [{mod["title"]}]({mod["path"]}) | {mod["description"]} | {mod["printer_compatibility"]} | {mod["last_changed"]} |\n')
             prev_username = mod["creator"]
     if args.preview != "true":
-        with open("README.md", "w", encoding='utf-8') as f:
+        with open(Path(args.input_dir, "README.md"), "w", encoding='utf-8') as f:
             f.write(preamble)
             f.write(header)
             prev_username = ""
