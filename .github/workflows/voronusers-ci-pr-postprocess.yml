@@ -1,0 +1,42 @@
+---
+name: voronusers_ci_pr_postprocessing
+on:
+    workflow_call:
+jobs:
+    handle_pr_comment:
+        permissions:
+            pull-requests: write
+        runs-on: ubuntu-latest
+        env:
+            VORON_TOOLKIT_VERBOSE: true
+            VORON_CI_GITHUB_TOKEN: ${{ github.token }}
+        steps:
+          - name: Create PR comment 💬
+            id: create_pr_comment
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            env:
+                PR_HELPER_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+                PR_HELPER_ARTIFACT_NAME: ci_output
+                PR_HELPER_GITHUB_REPOSITORY: ${{ github.repository }}
+            with:
+                args: set-pr-comment-labels
+
+    handle_upload_imagekit:
+        if: ${{ github.event.workflow_run.event == 'pull_request' }}
+        env:
+            VORON_TOOLKIT_VERBOSE: true
+            VORON_CI_GITHUB_TOKEN: ${{ github.token }}
+        runs-on: ubuntu-latest
+        steps:
+          - name: Upload images to imagekit 📸
+            id: imagekit-upload
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            env:
+                IMAGEKIT_UPLOADER_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+                IMAGEKIT_UPLOADER_ARTIFACT_NAME: ci_output
+                IMAGEKIT_UPLOADER_GITHUB_REPOSITORY: ${{ github.repository }}
+                IMAGEKIT_UPLOADER_PUBLIC_KEY: ${{ secrets.IMAGEKIT_PUBLIC_KEY }}
+                IMAGEKIT_UPLOADER_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
+                IMAGEKIT_UPLOADER_IMAGEKIT_ENDPOINT: https://ik.imagekit.io/vorondesign
+            with:
+                args: upload-images
