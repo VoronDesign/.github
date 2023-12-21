@@ -2,6 +2,10 @@
 name: voronusers_ci_push_main
 on:
     workflow_call:
+        secrets:
+            VORON_BOT_GITHUB_PAT:
+                description: GitHub token or PAT token
+                required: true
 jobs:
     run:
         runs-on: ubuntu-latest          

@@ -2,6 +2,11 @@
 name: voronusers_ci_pr_postprocessing
 on:
     workflow_call:
+        secrets:
+            IMAGEKIT_PRIVATE_KEY:
+                required: true
+            IMAGEKIT_PUBLIC_KEY:
+                required: true
 jobs:
     handle_pr_comment:
         permissions:
