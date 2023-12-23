@@ -42,7 +42,7 @@ jobs:
                 cp _out/readme_generator/README.md printer_mods/README.md
                 cp _out/readme_generator/mods.json printer_mods/mods.json
                 git add printer_mods/README.md printer_mods/mods.json
-                git commit -m "Generate VoronUsers printer_mods README.md [skip ci]" || true
+                git commit -m "Generate VoronUsers README" -m "[skip ci]" || true
         # Push the changes
           - name: Push changes ⬆️
             uses: ad-m/github-push-action@d9117be7cad08757e9e906a1bcd1716d6b192db5
