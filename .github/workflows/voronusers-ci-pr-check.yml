@@ -4,6 +4,7 @@ on:
     workflow_call:
 jobs:
     run:
+        if: ${{ contains( github.event.pull_request.labels.*.name, 'Ready for CI') }}
         env:
             VORON_TOOLKIT_OUTPUT_DIR: ${{ github.workspace }}/workflow_output
             VORON_TOOLKIT_INPUT_DIR: ${{ github.workspace }}/printer_mods
