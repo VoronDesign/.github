@@ -21,7 +21,7 @@ jobs:
         # Sanitize the file list
           - id: sanitize_file_list
             name: Sanitize file list 🧹
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 FILE_LIST_SANITIZE_INPUT: ${{ steps.changed-files.outputs.all_changed_files }}
             with:
@@ -42,7 +42,7 @@ jobs:
                 echo -n ${{ github.event.number }} > ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}/pr_number.txt
         # Run whitespace checks for the files in the PR
           - name: Check for whitespace in folders/filenames 🔍
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 WHITESPACE_CHECKER_IGNORE_WARNINGS: false
             with:
@@ -50,7 +50,7 @@ jobs:
         # Run mod structure checks (missing files, present but unconfigured files, bad metadata files, etc.)
           - name: Check correct mod/file structure 🔍
             if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 MOD_STRUCTURE_CHECKER_IGNORE_WARNINGS: false
             with:
@@ -58,7 +58,7 @@ jobs:
         # Run the corruption checker
           - name: Check for STL corruption 🔍
             if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 CORRUPTION_CHECKER_IGNORE_WARNINGS: false
             with:
@@ -66,7 +66,7 @@ jobs:
         # Run the rotation checker
           - name: Check for incorrect STL rotation 🔍
             if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 ROTATION_CHECKER_IGNORE_WARNINGS: true
                 ROTATION_CHECKER_IMAGEKIT_ENDPOINT: https://ik.imagekit.io/vorondesign
@@ -76,7 +76,7 @@ jobs:
         # Generate the README row previews
           - name: Generate README 📒
             if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 README_GENERATOR_MARKDOWN: false
                 README_GENERATOR_JSON: false

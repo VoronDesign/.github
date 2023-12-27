@@ -28,7 +28,7 @@ jobs:
                 sparse-checkout-cone-mode: false
         # Generate the new readme file
           - name: Generate README 📒
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:latest
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
             env:
                 README_GENERATOR_MARKDOWN: true
                 README_GENERATOR_JSON: true
