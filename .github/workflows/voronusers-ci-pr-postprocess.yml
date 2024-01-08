@@ -7,35 +7,32 @@ on:
                 required: true
             IMAGEKIT_PUBLIC_KEY:
                 required: true
+env:
+    VORON_TOOLKIT_VERBOSE: true
+    VORON_CI_GITHUB_TOKEN: ${{ github.token }}
 jobs:
     handle_pr_comment:
         permissions:
             pull-requests: write
+            checks: write
+            statuses: write
         runs-on: ubuntu-latest
-        env:
-            VORON_TOOLKIT_VERBOSE: true
-            VORON_CI_GITHUB_TOKEN: ${{ github.token }}
         steps:
-          - name: Create PR comment 💬
+          - name: Create PR comment, status-checks and labels 💬
             id: create_pr_comment
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
             env:
                 PR_HELPER_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
                 PR_HELPER_ARTIFACT_NAME: ci_output
                 PR_HELPER_GITHUB_REPOSITORY: ${{ github.repository }}
             with:
                 args: set-pr-comment-labels
-
     handle_upload_imagekit:
-        if: ${{ github.event.workflow_run.event == 'pull_request' }}
-        env:
-            VORON_TOOLKIT_VERBOSE: true
-            VORON_CI_GITHUB_TOKEN: ${{ github.token }}
         runs-on: ubuntu-latest
         steps:
           - name: Upload images to imagekit 📸
             id: imagekit-upload
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
             env:
                 IMAGEKIT_UPLOADER_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
                 IMAGEKIT_UPLOADER_ARTIFACT_NAME: ci_output

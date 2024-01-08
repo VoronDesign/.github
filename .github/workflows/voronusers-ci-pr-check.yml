@@ -2,90 +2,110 @@
 name: voronusers_ci_pr_check
 on:
     workflow_call:
+env:
+    VORON_TOOLKIT_OUTPUT_DIR: ${{ github.workspace }}/workflow_output
+    VORON_TOOLKIT_INPUT_DIR: ${{ github.workspace }}/printer_mods
+    VORON_TOOLKIT_GH_STEP_SUMMARY: true
+    VORON_TOOLKIT_VERBOSE: true
+    GITHUB_EVENT_CONTEXT: ${{ toJson(github.event) }}
 jobs:
-    run:
-        if: ${{ contains( github.event.pull_request.labels.*.name, 'Ready for CI') }}
-        env:
-            VORON_TOOLKIT_OUTPUT_DIR: ${{ github.workspace }}/workflow_output
-            VORON_TOOLKIT_INPUT_DIR: ${{ github.workspace }}/printer_mods
-            VORON_TOOLKIT_GH_STEP_SUMMARY: true
-            VORON_TOOLKIT_VERBOSE: true
+    voron_ci_skip:
+        if: ${{ github.event.action != 'labeled' || !contains( github.event.pull_request.labels.*.name, 'Ready for CI')}}
         runs-on: ubuntu-latest
+        steps:
+          - name: Save Github Event Payload 💾
+            id: save-payload
+            run: |
+                mkdir -p ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}
+                echo -n "$GITHUB_EVENT_CONTEXT" >> ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}/event.json
+        # Upload Artifact
+          - name: Upload build artifacts 📦
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
+            with:
+                name: ci_output
+                path: ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}
+    voron_ci_run:
+        if: ${{ github.event.action == 'labeled' && contains( github.event.pull_request.labels.*.name, 'Ready for CI')}}
+        runs-on: ubuntu-latest
+        continue-on-error: true
         steps:
         # Check out files, separate with newlines to catch whitespace in filenames
           - id: changed-files
             name: Get changed files 🔀
-            uses: tj-actions/changed-files@v37
+            uses: tj-actions/changed-files@a21a533a0c244a27daac02f9dc6fcf8aeb996154
             with:
                 separator: "\n"
-        # Sanitize the file list
-          - id: sanitize_file_list
-            name: Sanitize file list 🧹
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+        # Prepare patterns for sparse checkout
+          - name: Prepare Sparse Checkout 🧹
+            id: sanitize_file_list
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
             env:
-                FILE_LIST_SANITIZE_INPUT: ${{ steps.changed-files.outputs.all_changed_files }}
+                SPARSE_CHECKOUT_HELPER_INPUT: ${{ steps.changed-files.outputs.all_changed_files }}
+                SPARSE_CHECKOUT_HELPER_MOD_SUBFOLDER: printer_mods
             with:
-                args: sanitize-file-list
+                args: prepare-sparse-checkout
         # Perform a sparse checkout, checking out only the files of the PR
           - name: Perform sparse checkout ↪️
-            uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+            uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
             with:
                 ref: ${{ github.ref }}
                 path: ${{ github.workspace }}
-                sparse-checkout: ${{ steps.sanitize_file_list.outputs.FILE_LIST_SANITIZE_OUTPUT }}
+                sparse-checkout: ${{ steps.sanitize_file_list.outputs.SPARSE_CHECKOUT_HELPER_OUTPUT }}
                 sparse-checkout-cone-mode: false
-        # Store the PR number (this isn't passed to completion-triggered workloads, so we need to do this manually)
-          - name: Store PR number 🔢
-            if: '!cancelled()'
+        # Save the event payload (do this after the sparse checkout to avoid the file being cleaned)
+          - name: Save Github Event Payload 💾
+            id: save-payload
             run: |
                 mkdir -p ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}
-                echo -n ${{ github.event.number }} > ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}/pr_number.txt
-        # Run whitespace checks for the files in the PR
-          - name: Check for whitespace in folders/filenames 🔍
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+                echo -n "$GITHUB_EVENT_CONTEXT" >> ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}/event.json
+        # Run whitespace/licenses/file sizes check based on files in the test directory
+          - name: Check files for whitespace/licenses/file sizes 🔍
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
+            continue-on-error: true
             env:
-                WHITESPACE_CHECKER_IGNORE_WARNINGS: false
+                FILE_CHECKER_IGNORE_WARNINGS: true
+                FILE_CHECKER_CHECK_LICENSE: true
+                FILE_CHECKER_CHECK_FILE_SIZE_MB: 2
             with:
-                args: check-whitespace
-        # Run mod structure checks (missing files, present but unconfigured files, bad metadata files, etc.)
+                args: check-files
+        # Check the mod structure
           - name: Check correct mod/file structure 🔍
-            if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
+            continue-on-error: true
             env:
-                MOD_STRUCTURE_CHECKER_IGNORE_WARNINGS: false
+                MOD_STRUCTURE_CHECKER_IGNORE_WARNINGS: true
             with:
                 args: check-mod-structure
         # Run the corruption checker
           - name: Check for STL corruption 🔍
-            if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
+            continue-on-error: true
             env:
-                CORRUPTION_CHECKER_IGNORE_WARNINGS: false
+                CORRUPTION_CHECKER_IGNORE_WARNINGS: true
             with:
                 args: check-stl-corruption
         # Run the rotation checker
           - name: Check for incorrect STL rotation 🔍
-            if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
+            continue-on-error: true
             env:
                 ROTATION_CHECKER_IGNORE_WARNINGS: true
                 ROTATION_CHECKER_IMAGEKIT_ENDPOINT: https://ik.imagekit.io/vorondesign
                 ROTATION_CHECKER_IMAGEKIT_SUBFOLDER: ci_${{github.event.number}}
             with:
                 args: check-stl-rotation
-        # Generate the README row previews
+        # Generate a README
           - name: Generate README 📒
-            if: '!cancelled()'
-            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v2
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
+            continue-on-error: true
             env:
                 README_GENERATOR_MARKDOWN: false
                 README_GENERATOR_JSON: false
             with:
                 args: generate-readme
-        # Upload all results as an artifact
+        # Upload Artifact
           - name: Upload build artifacts 📦
-            uses: actions/upload-artifact@65d862660abb392b8c4a3d1195a2108db131dd05
-            if: '!cancelled()'
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
             with:
                 name: ci_output
                 path: ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}
