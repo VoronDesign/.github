@@ -12,6 +12,7 @@ env:
     VORON_CI_GITHUB_TOKEN: ${{ github.token }}
 jobs:
     handle_pr_comment:
+        if: ${{ github.repository_owner == 'VoronDesign'}}
         permissions:
             pull-requests: write
             checks: write
@@ -28,6 +29,7 @@ jobs:
             with:
                 args: set-pr-comment-labels
     handle_upload_imagekit:
+        if: ${{ github.repository_owner == 'VoronDesign'}}
         runs-on: ubuntu-latest
         steps:
           - name: Upload images to imagekit 📸

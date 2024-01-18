@@ -9,6 +9,7 @@ on:
 jobs:
     run:
         runs-on: ubuntu-latest
+        if: ${{ github.repository_owner == 'VoronDesign'}}
         env:
             VORON_TOOLKIT_OUTPUT_DIR: _out
             VORON_TOOLKIT_INPUT_DIR: printer_mods

@@ -76,6 +76,14 @@ jobs:
                 MOD_STRUCTURE_CHECKER_IGNORE_WARNINGS: true
             with:
                 args: check-mod-structure
+        # Check markdown links
+          - name: Check markdown files 🔍
+            uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
+            continue-on-error: true
+            env:
+                MARKDOWN_LINK_CHECKER_IGNORE_WARNINGS: true
+            with:
+                args: check-markdown-files
         # Run the corruption checker
           - name: Check for STL corruption 🔍
             uses: docker://ghcr.io/vorondesign/voron_toolkit_docker:v3
