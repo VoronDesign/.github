@@ -113,7 +113,7 @@ jobs:
                 args: generate-readme
         # Upload Artifact
           - name: Upload build artifacts 📦
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
+            uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
             with:
                 name: ci_output
                 path: ${{ env.VORON_TOOLKIT_OUTPUT_DIR }}
